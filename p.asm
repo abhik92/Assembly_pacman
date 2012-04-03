@@ -89,7 +89,7 @@ up:
 	jne finish
 	cmp p_row,9
 	jne else4
-	mov p_row,199
+	mov p_row,209
 	else4:
 	sub p_row,10
 finish:
@@ -124,7 +124,7 @@ clrscr:
 ;   SET COLOR OF BACKGROUND IN GRAPHICS MODE     
 
 ;   color is stored in al before calling   
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	color proc near
 		mov 	al, 0001	
 		mov 	cx,0            ; starting row
