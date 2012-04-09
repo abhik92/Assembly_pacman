@@ -83,6 +83,49 @@ ex:
   ret
 printint endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+drawEnemy proc
+  pushAll
+  mov cx, col_pixel
+  mov dx, row_pixel
+  mov ah, 0ch
+  mov al, 1110b
+  mov bh, 3
+  add cx, 2
+  rowOneColor:
+    int 10h
+    inc cx
+    dec bh
+    cmp bh, 0
+    jg rowOneColor
+  mov bh, 5
+  sub cx, 4
+  inc dx
+  rowTwoColor:
+    int 10h
+    inc cx
+    dec bh
+    cmp bh,0
+    jg rowTwoColor
+  sub cx, 6
+  mov bl, 5
+  remaining:
+    inc dx
+    mov bh, 7
+    colColor:
+      int 10h
+      inc cx
+      dec bh
+      cmp bh, 0
+      jg colColor
+    sub cx, 7
+    dec bl
+    cmp bl, 0
+    jg remaining
+    
+  popAll
+  ret
+drawEnemy endp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 gridInit proc
   pushAll
   mov bx, 1
@@ -111,7 +154,7 @@ gridInit proc
   add bx, 10
   mov grid[bx], -1 
   inc bx
-  mov grid[bx], 1
+  mov grid[bx], 2
   inc bx
   mov grid[bx], -1
   inc bx
@@ -291,7 +334,7 @@ gridInit proc
   inc bx
   mov grid[bx], -1
   inc bx
-  mov grid[bx], 0
+  mov grid[bx], 3
   inc bx
   mov grid[bx], 0
   row12:
@@ -466,7 +509,7 @@ gridInit proc
   add bx, 10
   mov grid[bx], -1
   inc bx
-  mov grid[bx], 1
+  mov grid[bx], 2
   inc bx
   mov grid[bx], -1
   inc bx
@@ -591,6 +634,32 @@ caughtFood proc
   ret
 caughtFood endp
 
+drawPower proc
+  pushAll
+  mov dx, row_pixel
+  add dx, 2
+  mov cx, col_pixel
+  add cx, 2
+  mov bh, 3
+  mov al, pink
+  mov ah, 0ch
+  power2:
+  mov bl, 3
+    power1:
+      int 10h
+      inc cx
+      dec bl
+      cmp bl, 0
+      jg power1
+    inc dx
+    sub cx, 3
+    dec bh
+    cmp bh, 0 
+    jg power2
+  popAll
+  ret
+drawPower endp
+
 drawFood proc
   pushAll
   
@@ -622,10 +691,19 @@ drawMaze proc
       je drawF
       cmp grid[bx+si], 0
       je loopCol
+      cmp grid[bx+si], 3
+      je drawE
+      drawP:
+        call drawPower
+        jmp loopCol
       drawG:
         mov al, blue
         mov color, al
         call drawGrid 
+        jmp loopCol
+      drawE:
+        mov color, 1010b
+        call drawEnemy
         jmp loopCol
       drawF:
         call drawFood
@@ -698,7 +776,7 @@ drawPac endp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 change proc near
 	local up,right,down,finish,left
-
+    push ax
 left:	
 	cmp al,'a'
 	jne right
@@ -746,6 +824,7 @@ updatePacPos:
     mov al, col
     mov pac_c, al
 finish:
+  pop ax
   ret
 change endp
 ;;;;;;;;;;;;convert index to Position;;;;;;;;;;;;
@@ -774,12 +853,36 @@ getIndex proc
   mov index, ax
   popAll
   ret
-getIndex endp  
+getIndex endp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+delay proc
+  pushAll
+    mov cx, 0fffh
+    outer:
+      push cx
+      mov cx, 0fffh
+      here:
+        mov ax, bx
+        loop here
+      pop cx
+      loop outer
+  popAll
+  ret
+delay endp
+
+;;;;;;;;;;;;;;;;; move enemy ;;;;;;;;;;;;;
+moveEnemy proc
+  pushAll
+
+  popAll
+  ret
+moveEnemy endp
+
 ;;;;;;;;;;;;;;;;;;;;start;;;;;;;;;;;;;;;
 start:
   mov ax, @data
   mov ds, ax
-;;;;;;;;;;;;;;;;;;;;;set graphic mode;;;;;;;;;
+ ;;; set graphic ;;;
   mov al, 13h
   mov ah, 0
   int 10h
@@ -796,9 +899,15 @@ start:
   mov ax, index
   mov pac_idx, ax
   
+  mov al, 'a' 
   run:		
-	mov ah,00h
+	mov ah,01h
 	int 16h
+    jz gotInput
+    mov ah, 0h
+    int 16h
+
+gotInput:
 	cmp al,'p'		
 	je fin
 	mov bl, black
@@ -807,7 +916,11 @@ start:
 	call change 
 	mov bl, green
 	mov color, bl
-	call drawPac 
+	call drawPac
+    mov cx, 5
+    delayMore:
+    call delay
+    loop delayMore
 	jmp run
 
   fin:		
